@@ -1,0 +1,70 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Thu Sep 08 16:17:13 2022
+[*]
+[dumpfile] "D:\FPGA\verilog\i2c_slave\build\test_tb_20220909_001310.vcd"
+[dumpfile_mtime] "Thu Sep 08 16:13:10 2022"
+[dumpfile_size] 269879
+[savefile] "D:\FPGA\verilog\i2c_slave\build\wave.gtkw"
+[timestart] 83629
+[size] 1920 1017
+[pos] -1 -1
+*-7.315313 83813 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_tb.
+[sst_width] 197
+[signals_width] 414
+[sst_expanded] 1
+[sst_vpaned_height] 321
+@28
+test_tb.u_test.clk
+@22
+test_tb.u_test.data[7:0]
+@28
+test_tb.u_sync.input_signal
+test_tb.u_sync.output_signal
+test_tb.u_sync_2.output_signal
+test_tb.u_sync_3.output_signal
+test_tb.u_filter.input_signal
+test_tb.u_filter.output_signal
+test_tb.u_filter_1.output_signal
+test_tb.u_edge_detect.neg
+test_tb.u_edge_detect.pos
+test_tb.u_edge_detect.input_signal
+@800200
+-slave
+@28
+test_tb.u_i2c_slave.sda_filter
+test_tb.u_i2c_slave.scl_filter
+test_tb.u_i2c_slave.scl_neg
+test_tb.u_i2c_slave.scl_pos
+@22
+test_tb.u_i2c_slave.curr_state[7:0]
+test_tb.u_i2c_slave.cnt_sda[7:0]
+@28
+test_tb.u_i2c_slave.hitar
+test_tb.u_i2c_slave.flag_ack
+test_tb.u_i2c_slave.flag_restart
+test_tb.u_i2c_slave.flag_start
+@29
+test_tb.u_i2c_slave.flag_stop
+@28
+test_tb.u_i2c_slave.sda_oen
+@22
+test_tb.u_i2c_slave.read_data[7:0]
+@28
+test_tb.u_i2c_slave.read_en
+@1000200
+-slave
+@800200
+-master
+@22
+test_tb.u_i2c_master.curr_state[7:0]
+test_tb.u_i2c_master.read_data[7:0]
+@28
+test_tb.u_i2c_master.read_en
+test_tb.u_i2c_master.conti_receive
+test_tb.u_i2c_master.flag_ack
+@1000200
+-master
+[pattern_trace] 1
+[pattern_trace] 0

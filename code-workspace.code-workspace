@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"verilog.clearPreviousOutput": true,
+		"verilog.runInTerminal": true
+	}
+}

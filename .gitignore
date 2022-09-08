@@ -1,0 +1,4 @@
+build/history
+build/*.out
+build/*.vcd
+build/*.log
