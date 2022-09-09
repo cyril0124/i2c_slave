@@ -27,20 +27,20 @@ u_sync
 
 sync
 #(
-    .DLY_NUM(1),
-    .INIT_VAL(1)
+    .DLY_NUM(0),
+    .INIT_VAL(0)
 )
 u_sync_2
 (
     .clk(ss.clk),
     .rst_n(ss.rst_n),
-    .input_signal(!ss.a),
+    .input_signal(ss.a),
     .output_signal()
 );
 
 sync
 #(
-    .DLY_NUM(2),
+    .DLY_NUM(1),
     .INIT_VAL(0)
 )
 u_sync_3
@@ -81,6 +81,17 @@ edge_detect#(
     .pos          (   ),
     .neg          (   )
 );
+
+pipe#(
+    .PIPE_LEN     ( 2 ),
+    .INIT_VAL     ( 1'b0 )
+)u_pipe(
+    .clk          ( ss.clk          ),
+    .rst_n        ( ss.rst_n        ),
+    .input_signal ( ss.d            ),
+    .output_signal(   )
+);
+
 
 test u_test
 (

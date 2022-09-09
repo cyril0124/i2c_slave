@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Thu Sep 08 16:17:13 2022
+[*] Fri Sep 09 02:37:08 2022
 [*]
-[dumpfile] "D:\FPGA\verilog\i2c_slave\build\test_tb_20220909_001310.vcd"
-[dumpfile_mtime] "Thu Sep 08 16:13:10 2022"
-[dumpfile_size] 269879
+[dumpfile] "D:\FPGA\verilog\i2c_slave\build\test_tb_20220909_103636.vcd"
+[dumpfile_mtime] "Fri Sep 09 02:36:36 2022"
+[dumpfile_size] 302412
 [savefile] "D:\FPGA\verilog\i2c_slave\build\wave.gtkw"
-[timestart] 83629
+[timestart] 0
 [size] 1920 1017
 [pos] -1 -1
-*-7.315313 83813 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-7.315313 139 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_tb.
 [sst_width] 197
 [signals_width] 414
@@ -30,6 +30,9 @@ test_tb.u_filter_1.output_signal
 test_tb.u_edge_detect.neg
 test_tb.u_edge_detect.pos
 test_tb.u_edge_detect.input_signal
+test_tb.u_pipe.input_signal
+@29
+test_tb.u_pipe.output_signal
 @800200
 -slave
 @28
@@ -45,9 +48,7 @@ test_tb.u_i2c_slave.hitar
 test_tb.u_i2c_slave.flag_ack
 test_tb.u_i2c_slave.flag_restart
 test_tb.u_i2c_slave.flag_start
-@29
 test_tb.u_i2c_slave.flag_stop
-@28
 test_tb.u_i2c_slave.sda_oen
 @22
 test_tb.u_i2c_slave.read_data[7:0]

@@ -8,6 +8,7 @@ reg  rst_n;
 reg a;
 reg b;
 reg c;
+reg d;
 
 parameter CLK_FREQ = 20;
 parameter U_DLY = 1;
@@ -51,6 +52,15 @@ initial begin
     c = 1'b1;
     repeat(20) @(posedge clk); #1
     c = 1'b0;
+end
+
+initial begin
+    #0 d = 1'b0;
+    forever begin
+        repeat(5) @(negedge clk); 
+        #9 d = ~d;
+    end
+
 end
 
 
@@ -180,7 +190,7 @@ task s_i2c_wr_bytes;
     input [63:0] bytes;
     input [7:0] num;
     begin
-        
+
     end
 endtask
 

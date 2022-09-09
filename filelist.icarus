@@ -9,6 +9,7 @@
 ./src/common/sync.v
 ./src/common/filter.v
 ./src/common/edge_detect.v
+./src/common/pipe.v
 
 
 +incdir+./src
