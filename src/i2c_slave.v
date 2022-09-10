@@ -10,10 +10,11 @@ module i2c_slave
 
     input wire  scl_in,
     input wire  sda_in,
-    output reg  sda_oen,
-
+    output wire  sda_oen,
+    
     input wire [7:0] write_data,
     input wire  write_en,
+    output reg  write_rdy,
 
     output reg [7:0] read_data,
     output reg  read_en,
@@ -22,7 +23,8 @@ module i2c_slave
     output reg  flag_start,
     output reg  flag_ack,
     output reg  flag_restart,
-    output reg  flag_stop
+    output reg  flag_stop,
+    output reg  flag_err
 );
 
 parameter U_DLY = 1;
@@ -99,8 +101,9 @@ begin
             if(cnt_sda[7:0] == 8'h08 && scl_neg == 1'b1) begin
                 if(hitar == 1'b1 && i2c_rw == 1'b0)
                     next_state = STATE_WR_DAT;
-                else if(hitar == 1'b1 && i2c_rw == 1'b1)
+                else if(hitar == 1'b1 && i2c_rw == 1'b1) begin
                     next_state = STATE_RD_DAT;
+                end
                 else
                     next_state = STATE_STOP;
             end
@@ -174,16 +177,17 @@ begin
     end
 end
 
-//**************************************************************************
-//                i2c slave write data(master read data)
-//**************************************************************************
 always @(posedge clk or negedge rst_n) 
 begin
     if(rst_n == 1'b0) begin
-        data_send[7:0] <= #U_DLY 8'hff;
+        write_rdy <= #U_DLY 1'b0;
     end
-    else if(write_en == 1'b1) begin
-        data_send[7:0] <= #U_DLY write_data[7:0];
+    else  begin
+        case ({curr_state,next_state,i2c_rw})
+            {STATE_RD_DAT , STATE_ACK2, 1'b1},
+            {STATE_ADDR   , STATE_ACK0, 1'b1}: write_rdy <= #U_DLY 1'b1;
+            default: write_rdy <= #U_DLY 1'b0;
+        endcase
     end
 end
 
@@ -236,11 +240,13 @@ begin
         hitar <= #U_DLY 1'b0;
         i2c_rw <= #U_DLY 1'b0;
     end
+    else if(curr_state == STATE_ADDR && cnt_sda[7:0] == 8'h07 && scl_pos == 1'b1) begin
+        i2c_rw <= #U_DLY sda_filter;
+    end
     else if(curr_state == STATE_ADDR && next_state == STATE_ACK0 &&
             shift_sda[7:1] == SLAVE_ADDR[7:1]
             ) begin
         hitar <= #U_DLY 1'b1;
-        i2c_rw <= #U_DLY shift_sda[0];
     end
     else if(curr_state == STATE_IDLE)begin
         hitar <= #U_DLY 1'b0;
@@ -284,8 +290,6 @@ begin
     else if(curr_state == STATE_ACK2) begin
         if(scl_pos == 1'b1 && sda_filter == 1'b0) 
             flag_ack <= #U_DLY 1'b1;
-        else
-            flag_ack <= #U_DLY 1'b0;
     end
     else begin
         flag_ack <= #U_DLY 1'b0;
@@ -332,22 +336,61 @@ begin
     end
 end
 
+always @(posedge clk or negedge rst_n) 
+begin
+    if(rst_n == 1'b0) begin
+        flag_err <= #U_DLY 1'b0;
+    end
+    else if(curr_state == STATE_ACK0 && hitar == 1'b0) begin
+        flag_err <= #U_DLY 1'b1;
+    end
+    else begin
+        flag_err <= #U_DLY 1'b0;
+    end
+end
+
+//**************************************************************************
+//                i2c slave write data(master read data)
+//**************************************************************************
+always @(posedge clk or negedge rst_n) 
+begin
+    if(rst_n == 1'b0) begin
+        data_send[7:0] <= #U_DLY 8'hff;
+    end
+    else if(write_en == 1'b1) begin
+        data_send[7:0] <= #U_DLY write_data[7:0];
+    end
+    else if((curr_state == STATE_ACK0 || curr_state == STATE_ACK2) && 
+            next_state == STATE_RD_DAT ) begin
+        data_send[7:0] <= #U_DLY {data_send[6:0],1'b1};
+    end
+    else if(curr_state == STATE_RD_DAT && scl_neg == 1'b1) begin
+        data_send[7:0] <= #U_DLY {data_send[6:0],1'b1};
+    end
+end
+
+
 //**************************************************************************
 //                sda output signal
 //**************************************************************************
 always @(posedge clk or negedge rst_n) 
 begin
     if(rst_n == 1'b0) begin
-        sda_oen <= #U_DLY 1'b1;
+        sda_oen_pre <= #U_DLY 1'b1;
+    end
+    else if((curr_state == STATE_ACK0 || curr_state == STATE_ACK2) && 
+            next_state == STATE_RD_DAT ) begin
+        sda_oen_pre <= #U_DLY data_send[7];
     end
     else if(curr_state == STATE_ACK0 || 
             curr_state == STATE_ACK1 ||
             curr_state == STATE_ACK2 )begin
-        sda_oen <= #U_DLY 1'b0;
+        sda_oen_pre <= #U_DLY 1'b0;
     end
-    else begin
-        sda_oen <= #U_DLY 1'b1;
+    else if(curr_state == STATE_RD_DAT && scl_neg == 1'b1) begin
+        sda_oen_pre <= #U_DLY data_send[7];
     end
+    else ;
 end
 
 //**************************************************************************
@@ -397,6 +440,16 @@ edge_detect#(
     .neg          ( sda_neg      )
 );
 
+//delay 2 clk cycles
+pipe#(
+    .PIPE_LEN     ( 2    ),
+    .INIT_VAL     ( 1'b1 )
+)u_pipe(
+    .clk          ( clk          ),
+    .rst_n        ( rst_n        ),
+    .input_signal ( sda_oen_pre  ),
+    .output_signal( sda_oen      )
+);
 
 
 

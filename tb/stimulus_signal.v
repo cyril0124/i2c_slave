@@ -75,6 +75,7 @@ reg m_write_en;
 
 wire [7:0] m_read_data;
 wire m_read_en;
+wire m_write_rdy;
 wire m_flag_start;
 wire m_flag_restar;
 wire m_flag_ack;
@@ -99,8 +100,8 @@ initial begin
     repeat(5) @(posedge clk);
     m_init_finish = 1'b1;
 
-    m_write_data = 8'h54;
-    m_write_en = 1'b1;
+    m_write_data = 8'hFF;
+    m_write_en = 1'b0;
 end
 
 task m_generate_i2c_start;
@@ -124,12 +125,11 @@ task m_i2c_send_bytes;
             m_i2c_rw = 1'b0;
         end
         m_generate_i2c_start;
-        wait(m_flag_start);
 
         m_slave_addr[7:0] = addr[7:0];
-        @(posedge m_flag_ack);
 
         for(i=0;i<num;i++) begin
+            @(posedge m_write_rdy);
             m_write_data[7:0] <= bytes[7:0];
             bytes[63:0] <= bytes[63:0] >> 8;
 
@@ -138,14 +138,8 @@ task m_i2c_send_bytes;
             @(posedge clk) #U_DLY
             m_write_en = 1'b0;
 
-            if(i==num-1) begin
+            if(i==num-1)
                 m_conti_write = 1'b0;
-                @(posedge m_flag_nack);
-            end
-            else begin
-                m_conti_write = 1'b1;
-                @(posedge m_flag_ack);
-            end
         end
         
         wait(m_flag_stop);
@@ -166,31 +160,105 @@ task m_i2c_recv_bytes;
         end
         $strobe("\n[%d]addr:0x%h num:0x%h i2c_recv_bytes start!>>>",$time,addr,num);
         m_generate_i2c_start;
-        wait(m_flag_start);
 
         m_slave_addr[7:0] = addr[7:0];
-        @(posedge m_flag_ack);
 
-        for(i=0;i<num-1;i++) begin
-            wait(m_read_en);
+        for(i=0;i<num;i=i) begin
+            @(posedge m_read_en);
             recv_data[7:0] <= m_read_data[7:0];
             $strobe("[%d]byte:0x%h",$time,recv_data);
-            @(posedge m_scl_oen); //等待下一波数据
+            i=i+1;
+            if(i==num-1)
+                m_conti_receive = 1'b0;
         end
 
-        m_conti_receive = 1'b0;
-
-        @(posedge m_flag_nack);
-        wait(m_flag_stop);
+        @(posedge m_flag_stop);
         $strobe("[%d]i2c_recv_bytes done!<<<\n",$time);
     end
 endtask
 
+task m_i2c_eeprom_random_read;
+    input [7:0] addr;
+    input [15:0] word_address;
+    input [7:0] word_addr_num;
+    reg [7:0] recv_data;
+    begin
+        #0 begin
+            m_i2c_rw = 1'b0; //写
+            m_conti_write = 1'b1;
+        end
+        m_generate_i2c_start;
+
+        m_slave_addr[7:0] = addr[7:0];
+        // @(posedge m_flag_ack);
+        
+        if(word_addr_num[7:0] == 8'h02) begin
+            @(posedge m_write_rdy);
+            m_write_data[7:0] = word_address[15:8];
+            @(posedge clk) #U_DLY
+            m_write_en = 1'b1;
+            @(posedge clk) #U_DLY
+            m_write_en = 1'b0;
+            // @(posedge m_flag_ack);
+        end
+        
+        if(word_addr_num[7:0] == 8'h02 || word_addr_num[7:0] == 8'h01) begin
+            @(posedge m_write_rdy);
+            m_write_data[7:0] = word_address[7:0];
+            @(posedge clk) #U_DLY
+            m_write_en = 1'b1;
+            @(posedge clk) #U_DLY
+            m_write_en = 1'b0;
+            // @(posedge m_flag_ack);
+        end
+
+        @(posedge m_write_rdy);
+        m_i2c_rw = 1'b1; //读
+
+        wait(m_flag_restar);
+
+        @(posedge m_flag_ack); //等待i2c发送读地址
+        m_conti_write = 1'b0;
+
+        wait(m_read_en);
+        recv_data[7:0] = m_read_data[7:0];
+
+        wait(m_flag_stop);
+        if(word_addr_num[7:0] == 8'h02)
+            $strobe("\n[%d]addr:0x%h word_addr:0x%h byte:0x%h i2c_eeprom_random_read done!\n",$time,addr,word_address,recv_data);
+        if(word_addr_num[7:0] == 8'h01)
+            $strobe("\n[%d]addr:0x%h word_addr:0x%h byte:0x%h i2c_eeprom_random_read done!\n",$time,addr,word_address[7:0],recv_data);
+    end
+endtask
+
+
+wire s_write_rdy;
+wire s_flag_stop;
+wire s_flag_err;
+reg [7:0] s_write_data;
+reg s_write_en;
+
+initial begin 
+    #0 begin 
+        s_write_data = 8'hff;
+        s_write_en = 1'b0;
+    end
+end
+
 task s_i2c_wr_bytes;
     input [63:0] bytes;
     input [7:0] num;
+    integer i;
     begin
-
+        for(i=0;i<num;i++) begin
+            @(posedge s_write_rdy);
+            s_write_data <= bytes[7:0];
+            bytes[63:0] <= bytes[63:0] >> 8;
+            s_write_en <= 1'b1;
+            @(posedge clk) #1
+            s_write_en <= 1'b0;
+        end
+        @(posedge s_flag_stop);
     end
 endtask
 

@@ -28,6 +28,7 @@ module i2c_master
 
     input   wire [7:0]  write_data    , //写入数据 send data
     input   wire        write_en      , //允许写入数据标志
+    output  reg         write_rdy     , //数据写入准备信号
 
     output  reg  [7:0]  read_data     , //读取数据
     output  reg         read_en       , //允许读取数据标志
@@ -393,7 +394,7 @@ begin
             STATE_WR_DAT,
             STATE_ADDR: begin
                 if(scl_cnt[3:0] == 4'b1111 && clk_en == 1'b1)
-                    data_send[7:0] <= #U_DLY {data_send[6:0],1'b1};
+                    data_send[7:0] <= #U_DLY {data_send[6:0],1'b1}; 
             end
             STATE_ACK0,
             STATE_ACK1: begin
@@ -405,6 +406,24 @@ begin
         endcase
     end
 end
+
+
+always @(posedge clk or negedge rst_n) 
+begin
+    if(rst_n == 1'b0) begin
+        write_rdy <= #U_DLY 1'b0;
+    end
+    else  if(curr_state == STATE_WR_DAT && next_state == STATE_ACK1 && i2c_rw == 1'b0) begin
+        write_rdy <= #U_DLY 1'b1;
+    end
+    else if(curr_state == STATE_ADDR && next_state == STATE_ACK0 && i2c_rw == 1'b0) begin
+        write_rdy <= #U_DLY 1'b1;
+    end
+    else begin
+        write_rdy <= #U_DLY 1'b0;
+    end
+end
+
 
 //**************************************************************************
 //                i2c_begin

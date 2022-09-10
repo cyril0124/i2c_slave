@@ -83,7 +83,7 @@ edge_detect#(
 );
 
 pipe#(
-    .PIPE_LEN     ( 2 ),
+    .PIPE_LEN     ( 3 ),
     .INIT_VAL     ( 1'b0 )
 )u_pipe(
     .clk          ( ss.clk          ),
@@ -101,9 +101,28 @@ test u_test
 
 initial begin
     wait(ss.m_init_finish == 1'b1);
+
     ss.m_i2c_send_bytes(8'hA0,64'h01_02,2);
+
+    fork
+        ss.m_i2c_send_bytes(8'hB0,64'h01_02,2);
+        begin
+            @(posedge ss.s_flag_err);
+            $strobe("[%d]m_i2c_send_bytes ERROR!\n",$time);
+        end
+    join
+
     ss.m_i2c_send_bytes(8'hA0,64'hC0_B0_A0_CC_EF_CD_B2_A0,8);
-    ss.m_i2c_recv_bytes(8'hA0,1);
+    
+    fork
+        ss.m_i2c_recv_bytes(8'hA0,5);
+        ss.s_i2c_wr_bytes(64'h55_44_33_22_11,5);
+    join
+
+    fork
+        ss.m_i2c_eeprom_random_read(8'hA0,8'h12,1);
+        ss.s_i2c_wr_bytes(64'hDB,1);
+    join
     $stop;
 end
 
@@ -124,6 +143,7 @@ i2c_master u_i2c_master(
     .conti_receive ( ss.m_conti_receive ),
     .write_data    ( ss.m_write_data    ),
     .write_en      ( ss.m_write_en      ),
+    .write_rdy     ( ss.m_write_rdy     ),
     .read_data     ( ss.m_read_data     ),
     .read_en       ( ss.m_read_en       ),
     .flag_start    ( ss.m_flag_start    ),
@@ -145,15 +165,17 @@ i2c_slave u_i2c_slave(
     .sda_in      ( ss.m_sda_oen   ),
     .sda_oen     ( ss.m_sda_in    ),
 
-    .write_data  ( write_data  ),
-    .write_en    ( write_en    ),
+    .write_data  ( ss.s_write_data  ),
+    .write_en    ( ss.s_write_en    ),
+    .write_rdy   ( ss.s_write_rdy   ),
     .read_data   ( read_data   ),
     .read_en     ( read_en     ),
     .hitar       ( hitar       ),
     .flag_start  ( flag_start  ),
     .flag_restart( flag_restart),
     .flag_ack    ( flag_ack    ),
-    .flag_stop   ( flag_stop   )
+    .flag_stop   ( ss.s_flag_stop   ),
+    .flag_err    ( ss.s_flag_err    )
 );
 
 
